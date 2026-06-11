@@ -1,18 +1,17 @@
-const { invoke } = window.__TAURI__.core;
+import { invoke } from "@tauri-apps/api/core";
 
-let greetInputEl;
-let greetMsgEl;
+document
+  .getElementById("btnTest")
+  .addEventListener("click", async () => {
 
-async function greet() {
-  // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-  greetMsgEl.textContent = await invoke("greet", { name: greetInputEl.value });
-}
+    const result =
+      await invoke(
+        "inspect_excel",
+        {
+          path: "Seisin.xlsx"
+        }
+      );
 
-window.addEventListener("DOMContentLoaded", () => {
-  greetInputEl = document.querySelector("#greet-input");
-  greetMsgEl = document.querySelector("#greet-msg");
-  document.querySelector("#greet-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    greet();
-  });
+    document.getElementById("result")
+      .textContent = result;
 });
