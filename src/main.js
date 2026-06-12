@@ -30,7 +30,11 @@ btnImport.addEventListener("click", async () => {
       path: filePath
     });
 
-    result.textContent = JSON.stringify(validation, null, 2);
+    const batchId = await invoke("create_import_history", {
+      path: filePath,
+    })
+
+    result.textContent = `\n\nインポート履歴ID: ${batchId}`
 
   } catch (error) {
     result.textContent = `エラー: ${error}`;

@@ -1,5 +1,8 @@
 use calamine::{open_workbook_auto, Data, Reader};
 use serde::Serialize;
+use std::path::Path;
+use crate::db;
+
 
 #[derive(Serialize)]
 pub struct VisitFeeRecordPreview {
@@ -30,6 +33,41 @@ pub struct FeeItemValidationResult {
     pub diff: i32,
     pub matched: bool,
 }
+
+
+#[tauri::command]
+pub fn create_import_history(path: String) -> Result<String, String> {
+    let mut workbook =
+        open_workbook_auto(&path).map_err(|e| e.to_string())?;
+
+    let sheet_name = workbook
+        .sheet_names()
+        .first()
+        .ok_or("シートが見つかりません")?
+        .to_string();
+
+    let range = workbook
+        .worksheet_range(&sheet_name)
+        .map_err(|e| e.to_string())?;
+
+    let file_name = Path::new(&path)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    let batch_id = db::create_import_batch(
+        &file_name,
+        &path,
+        &sheet_name,
+        range.height(),
+        range.width(),
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(batch_id)
+}
+
 
 #[tauri::command]
 pub fn validate_fee_item_totals(path: String) -> Result<Vec<FeeItemValidationResult>, String> {

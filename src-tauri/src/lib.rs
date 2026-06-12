@@ -11,6 +11,7 @@ pub fn run() {
             ibow_import::inspect_excel,
             ibow_import::preview_visit_records,
             ibow_import::validate_fee_item_totals,
+            ibow_import::create_import_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
