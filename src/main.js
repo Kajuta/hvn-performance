@@ -26,7 +26,11 @@ btnImport.addEventListener("click", async () => {
       path: filePath
     });
 
-    result.textContent = JSON.stringify(records.slice(0, 100), null, 2);
+    const validation = await invoke("validate_fee_item_totals", {
+      path: filePath
+    });
+
+    result.textContent = JSON.stringify(validation, null, 2);
 
   } catch (error) {
     result.textContent = `エラー: ${error}`;

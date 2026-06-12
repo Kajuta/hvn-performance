@@ -9,7 +9,8 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             ibow_import::inspect_excel,
-            ibow_import::preview_visit_records
+            ibow_import::preview_visit_records,
+            ibow_import::validate_fee_item_totals,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
