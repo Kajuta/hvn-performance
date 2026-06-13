@@ -4,6 +4,13 @@ use std::path::Path;
 use crate::db;
 
 
+#[derive(serde::Serialize)]
+pub struct ImportResult {
+    pub batch_id: String,
+    pub record_count: usize,
+}
+
+
 #[derive(Serialize)]
 pub struct VisitFeeRecordPreview {
     pub user_name: String,
@@ -35,20 +42,10 @@ pub struct FeeItemValidationResult {
 }
 
 
+
 #[tauri::command]
-pub fn create_import_history(path: String) -> Result<String, String> {
-    let mut workbook =
-        open_workbook_auto(&path).map_err(|e| e.to_string())?;
-
-    let sheet_name = workbook
-        .sheet_names()
-        .first()
-        .ok_or("シートが見つかりません")?
-        .to_string();
-
-    let range = workbook
-        .worksheet_range(&sheet_name)
-        .map_err(|e| e.to_string())?;
+pub fn import_visit_records(path: String) -> Result<ImportResult, String> {
+    let records = preview_visit_records(path.clone())?;
 
     let file_name = Path::new(&path)
         .file_name()
@@ -57,15 +54,51 @@ pub fn create_import_history(path: String) -> Result<String, String> {
         .to_string();
 
     let batch_id = db::create_import_batch(
+        None,
         &file_name,
-        &path,
-        &sheet_name,
-        range.height(),
-        range.width(),
+        records.len(),
     )
     .map_err(|e| e.to_string())?;
 
-    Ok(batch_id)
+    let mut conn = db::get_connection()
+        .map_err(|e| e.to_string())?;
+
+    let tx = conn.transaction()
+        .map_err(|e| e.to_string())?;
+
+    for record in &records {
+        tx.execute(
+            "
+            INSERT INTO visit_fee_records (
+                import_batch_id,
+                user_name,
+                user_id,
+                fee_item_name,
+                count,
+                source_row,
+                source_column
+            )
+            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+            ",
+            (
+                &batch_id,
+                &record.user_name,
+                &record.ibow_user_id,
+                &record.fee_item_name,
+                record.count,
+                record.source_row as i64,
+                record.source_column as i64,
+            ),
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    tx.commit().map_err(|e| e.to_string())?;
+
+    Ok(ImportResult {
+        batch_id,
+        record_count: records.len(),
+    })
 }
 
 
