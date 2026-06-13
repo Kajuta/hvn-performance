@@ -30,11 +30,12 @@ btnImport.addEventListener("click", async () => {
       path: filePath
     });
 
-    const batchId = await invoke("create_import_history", {
-      path: filePath,
-    })
+    const importResult = await invoke("import_visit_records", {
+      path: filePath
+    });
 
-    result.textContent = `\n\nインポート履歴ID: ${batchId}`
+    result.textContent += 
+      `\n\n保存完了\nbatch_id: ${importResult.batch_id}\nrecord_count: ${importResult.record_count}`;
 
   } catch (error) {
     result.textContent = `エラー: ${error}`;
