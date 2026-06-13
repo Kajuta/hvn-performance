@@ -34,8 +34,17 @@ btnImport.addEventListener("click", async () => {
       path: filePath
     });
 
+    const summary = await invoke("aggregate_by_category", {
+      importBatchId: importResult.batch_id
+    });
+
     result.textContent += 
       `\n\n保存完了\nbatch_id: ${importResult.batch_id}\nrecord_count: ${importResult.record_count}`;
+
+    result.textContent += 
+      `\n\nカテゴリ別集計結果\n
+      ${JSON.stringify(summary, null, 2)}`;
+
 
   } catch (error) {
     result.textContent = `エラー: ${error}`;

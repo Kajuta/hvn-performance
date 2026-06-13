@@ -36,6 +36,21 @@ pub fn get_connection() -> Result<Connection> {
         [],
     )?;
 
+    conn.execute(
+        "
+        CREATE TABLE IF NOT EXISTS fee_item_master (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ibow_item_name TEXT UNIQUE NOT NULL,
+            category_name TEXT NOT NULL,
+            group_name TEXT,
+            item_type TEXT,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            display_order INTEGER
+        )
+        ",
+        [],
+    )?;
+
     Ok(conn)
 }
 
