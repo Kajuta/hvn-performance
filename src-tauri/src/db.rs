@@ -1,4 +1,6 @@
+use chrono::Local;
 use rusqlite::{Connection, Result};
+use uuid::Uuid;
 
 pub fn get_connection() -> Result<Connection> {
     let conn = Connection::open("../hvn-performance.db")?;
@@ -7,12 +9,28 @@ pub fn get_connection() -> Result<Connection> {
         "
         CREATE TABLE IF NOT EXISTS import_batches (
             id TEXT PRIMARY KEY,
+            target_month TEXT,
             source_file_name TEXT NOT NULL,
-            source_path TEXT NOT NULL,
-            sheet_name TEXT,
-            row_count INTEGER,
-            column_count INTEGER,
-            imported_at TEXT NOT NULL
+            imported_at TEXT NOT NULL,
+            record_count INTEGER NOT NULL
+        )
+        ",
+        [],
+    )?;
+
+    conn.execute(
+        "
+        CREATE TABLE IF NOT EXISTS visit_fee_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            import_batch_id TEXT NOT NULL,
+            user_name TEXT NOT NULL,
+            user_id TEXT,
+            fee_item_name TEXT NOT NULL,
+            count INTEGER NOT NULL,
+            source_row INTEGER,
+            source_column INTEGER,
+            FOREIGN KEY(import_batch_id)
+                REFERENCES import_batches(id)
         )
         ",
         [],
@@ -21,15 +39,10 @@ pub fn get_connection() -> Result<Connection> {
     Ok(conn)
 }
 
-use chrono::Local;
-use uuid::Uuid;
-
 pub fn create_import_batch(
+    target_month: Option<&str>,
     source_file_name: &str,
-    source_path: &str,
-    sheet_name: &str,
-    row_count: usize,
-    column_count: usize,
+    record_count: usize,
 ) -> Result<String> {
     let conn = get_connection()?;
 
@@ -40,23 +53,19 @@ pub fn create_import_batch(
         "
         INSERT INTO import_batches (
             id,
+            target_month,
             source_file_name,
-            source_path,
-            sheet_name,
-            row_count,
-            column_count,
-            imported_at
+            imported_at,
+            record_count
         )
-        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+        VALUES (?1, ?2, ?3, ?4, ?5)
         ",
         (
             &id,
+            target_month,
             source_file_name,
-            source_path,
-            sheet_name,
-            row_count as i64,
-            column_count as i64,
             imported_at,
+            record_count as i64,
         ),
     )?;
 
