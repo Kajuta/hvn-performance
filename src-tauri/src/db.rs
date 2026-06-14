@@ -6,8 +6,7 @@ pub fn get_connection() -> Result<Connection> {
     Connection::open("../hvn-performance.db")
 }
 
-pub fn init_db() -> Result<()> {
-    let mut conn = get_connection()?;
+pub fn init_db(conn: &mut Connection) -> Result<()> {
     let tx = conn.transaction()?;
 
     create_fee_category_master_table(&tx)?;
@@ -116,6 +115,8 @@ fn create_fee_master_table(tx: &rusqlite::Transaction) -> Result<()> {
 
     Ok(())
 }
+
+
 
 pub fn create_import_batch(
     tx: &Transaction,
