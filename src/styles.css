@@ -98,8 +98,21 @@ button {
   outline: none;
 }
 
-#greet-input {
-  margin-right: 5px;
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.tab-button {
+  background: #656565;
+}
+
+.tab-button.active {
+  background: #3b3a3a;
+  color: #9f9f9f;
 }
 
 @media (prefers-color-scheme: dark) {
