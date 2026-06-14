@@ -1,11 +1,16 @@
 mod db;
 mod ibow_import;
 mod aggregate;
+mod fee_master;
 
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    db::init_db().expect("DB init failed");
+    let mut conn = db::get_connection()
+        .expect("DB connection failed");
+
+    db::init_db(&mut conn)
+        .expect("DB init failed");
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -19,7 +24,8 @@ pub fn run() {
             aggregate::save_fee_item_mapping,
             aggregate::list_fee_item_master,
             aggregate::list_fee_categories,
-            aggregate::save_fee_category
+            aggregate::save_fee_category,
+            fee_master::import_fee_master_csv,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
