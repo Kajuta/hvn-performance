@@ -53,18 +53,19 @@ pub fn import_visit_records(path: String) -> Result<ImportResult, String> {
         .unwrap_or("unknown")
         .to_string();
 
-    let batch_id = db::create_import_batch(
-        None,
-        &file_name,
-        records.len(),
-    )
-    .map_err(|e| e.to_string())?;
-
     let mut conn = db::get_connection()
         .map_err(|e| e.to_string())?;
 
     let tx = conn.transaction()
         .map_err(|e| e.to_string())?;
+
+    let batch_id = db::create_import_batch(
+        &tx,
+        None,
+        &file_name,
+        records.len(),
+    )
+    .map_err(|e| e.to_string())?;
 
     for record in &records {
         tx.execute(

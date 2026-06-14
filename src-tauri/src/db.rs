@@ -1,11 +1,27 @@
 use chrono::Local;
-use rusqlite::{Connection, Result};
+use rusqlite::{Connection, Result, Transaction};
 use uuid::Uuid;
 
 pub fn get_connection() -> Result<Connection> {
-    let conn = Connection::open("../hvn-performance.db")?;
+    Connection::open("../hvn-performance.db")
+}
 
-    conn.execute(
+pub fn init_db() -> Result<()> {
+    let mut conn = get_connection()?;
+    let tx = conn.transaction()?;
+
+    create_fee_category_master_table(&tx)?;
+    create_import_batches_table(&tx)?;
+    create_visit_fee_records_table(&tx)?;
+    create_fee_item_master_table(&tx)?;
+    create_fee_master_table(&tx)?;
+
+    tx.commit()?;
+    Ok(())
+}
+
+fn create_fee_category_master_table(tx: &rusqlite::Transaction) -> Result<()> {
+    tx.execute(
         "
         CREATE TABLE IF NOT EXISTS fee_category_master (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,7 +35,11 @@ pub fn get_connection() -> Result<Connection> {
         [],
     )?;
 
-    conn.execute(
+    Ok(())
+}
+
+fn create_import_batches_table(tx: &rusqlite::Transaction) -> Result<()> {
+    tx.execute(
         "
         CREATE TABLE IF NOT EXISTS import_batches (
             id TEXT PRIMARY KEY,
@@ -32,7 +52,11 @@ pub fn get_connection() -> Result<Connection> {
         [],
     )?;
 
-    conn.execute(
+    Ok(())
+}
+
+fn create_visit_fee_records_table(tx: &rusqlite::Transaction) -> Result<()> {
+    tx.execute(
         "
         CREATE TABLE IF NOT EXISTS visit_fee_records (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,7 +74,11 @@ pub fn get_connection() -> Result<Connection> {
         [],
     )?;
 
-    conn.execute(
+    Ok(())
+}
+
+fn create_fee_item_master_table(tx: &rusqlite::Transaction) -> Result<()> {
+    tx.execute(
         "
         CREATE TABLE IF NOT EXISTS fee_item_master (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -65,20 +93,40 @@ pub fn get_connection() -> Result<Connection> {
         [],
     )?;
 
-    Ok(conn)
+    Ok(())
+}
+
+fn create_fee_master_table(tx: &rusqlite::Transaction) -> Result<()> {
+    tx.execute(
+        "
+        CREATE TABLE IF NOT EXISTS fee_master (
+            fee_code TEXT PRIMARY KEY,
+            fee_name TEXT NOT NULL,
+            kana_name TEXT,
+            unit_price INTEGER NOT NULL,
+            valid_from TEXT,
+            valid_to TEXT,
+            raw_json TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))
+        )
+        ",
+        [],
+    )?;
+
+    Ok(())
 }
 
 pub fn create_import_batch(
+    tx: &Transaction,
     target_month: Option<&str>,
     source_file_name: &str,
     record_count: usize,
 ) -> Result<String> {
-    let conn = get_connection()?;
-
     let id = Uuid::new_v4().to_string();
     let imported_at = Local::now().format("%Y-%m-%d %H:%M:%S").to_string();
 
-    conn.execute(
+    tx.execute(
         "
         INSERT INTO import_batches (
             id,

@@ -2,9 +2,10 @@ mod db;
 mod ibow_import;
 mod aggregate;
 
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    db::get_connection().expect("DB init failed");
+    db::init_db().expect("DB init failed");
 
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
