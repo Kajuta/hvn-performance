@@ -7,6 +7,20 @@ pub fn get_connection() -> Result<Connection> {
 
     conn.execute(
         "
+        CREATE TABLE IF NOT EXISTS fee_category_master (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            category_name TEXT UNIQUE NOT NULL,
+            group_name TEXT,
+            item_type TEXT,
+            display_order INTEGER,
+            is_active INTEGER NOT NULL DEFAULT 1
+        )
+        ",
+        [],
+    )?;
+
+    conn.execute(
+        "
         CREATE TABLE IF NOT EXISTS import_batches (
             id TEXT PRIMARY KEY,
             target_month TEXT,
