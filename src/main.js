@@ -4,6 +4,101 @@ import { open } from "@tauri-apps/plugin-dialog";
 const btnImport = document.getElementById("btnImport");
 const result = document.getElementById("result");
 
+const unmappedList = document.getElementById("unmappedList");
+const masterList = document.getElementById("masterList");
+
+const ibowItemName = document.getElementById("ibowItemName");
+const categoryName = document.getElementById("categoryName");
+const groupName = document.getElementById("groupName");
+const itemType = document.getElementById("itemType");
+const displayOrder = document.getElementById("displayOrder");
+
+const btnSaveMapping = document.getElementById("btnSaveMapping");
+
+let currentBatchId = null;
+
+const newCategoryName = document.getElementById("newCategoryName");
+const newCategoryGroupName = document.getElementById("newCategoryGroupName");
+const newCategoryItemType = document.getElementById("newCategoryItemType");
+const newCategoryDisplayOrder = document.getElementById("newCategoryDisplayOrder");
+const btnSaveCategory = document.getElementById("btnSaveCategory");
+
+async function loadCategoryOptions() {
+  const categories = await invoke("list_fee_categories");
+
+  categoryName.innerHTML = "";
+
+  categories.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category.category_name;
+    option.textContent =
+      `${category.category_name} / ${category.group_name ?? ""}`;
+
+    categoryName.appendChild(option);
+  });
+}
+
+
+function selectUnmappedItem(name) {
+  ibowItemName.value = name;
+  categoryName.value = "";
+  groupName.value = "";
+  itemType.value = "";
+  displayOrder.value = "";
+}
+
+async function loadUnmappedItems() {
+  if (!currentBatchId) return;
+
+  const items = await invoke("find_unmapped_fee_items", {
+    importBatchId: currentBatchId
+  });
+
+  unmappedList.innerHTML = "";
+
+  items.forEach((item) => {
+    const button = document.createElement("button");
+    button.textContent = item.ibow_item_name;
+    button.addEventListener("click", () => {
+      selectUnmappedItem(item.ibow_item_name);
+    });
+
+    unmappedList.appendChild(button);
+  });
+}
+
+async function loadMasterList() {
+  const items = await invoke("list_fee_item_master");
+
+  masterList.innerHTML = "";
+
+  items.forEach((item) => {
+    const div = document.createElement("div");
+
+    div.textContent =
+      `${item.ibow_item_name} → ${item.category_name} / ${item.group_name ?? ""} / ${item.item_type ?? ""}`;
+
+    masterList.appendChild(div);
+  });
+}
+
+btnSaveMapping.addEventListener("click", async () => {
+  await invoke("save_fee_item_mapping", {
+    input: {
+      ibow_item_name: ibowItemName.value,
+      category_name: categoryName.value,
+      group_name: groupName.value || null,
+      item_type: itemType.value || null,
+      display_order: displayOrder.value
+        ? Number(displayOrder.value)
+        : null
+    }
+  });
+
+  await loadUnmappedItems();
+  await loadMasterList();
+});
+
 btnImport.addEventListener("click", async () => {
   try {
     const filePath = await open({
@@ -34,19 +129,33 @@ btnImport.addEventListener("click", async () => {
       path: filePath
     });
 
-    const summary = await invoke("aggregate_by_category", {
-      importBatchId: importResult.batch_id
-    });
+    currentBatchId = importResult.batch_id;
 
-    result.textContent += 
-      `\n\n保存完了\nbatch_id: ${importResult.batch_id}\nrecord_count: ${importResult.record_count}`;
-
-    result.textContent += 
-      `\n\nカテゴリ別集計結果\n
-      ${JSON.stringify(summary, null, 2)}`;
+    await loadUnmappedItems();
+    await loadMasterList();
 
 
   } catch (error) {
     result.textContent = `エラー: ${error}`;
   }
+});
+
+btnSaveCategory.addEventListener("click", async () => {
+  await invoke("save_fee_category", {
+    input: {
+      category_name: newCategoryName.value,
+      group_name: newCategoryGroupName.value || null,
+      item_type: newCategoryItemType.value || null,
+      display_order: newCategoryDisplayOrder.value
+        ? Number(newCategoryDisplayOrder.value)
+        : null
+    }
+  });
+
+  newCategoryName.value = "";
+  newCategoryGroupName.value = "";
+  newCategoryItemType.value = "";
+  newCategoryDisplayOrder.value = "";
+
+  await loadCategoryOptions();
 });
