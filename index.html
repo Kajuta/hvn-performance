@@ -9,47 +9,78 @@
 
   <body>
     <main class="container">
-      <h1>ibow_import</h1>
+      <header class="app-header">
+        <h1>訪問看護 実績集計システム</h1>
+        <p>iBow出力データ取り込み、診療報酬マスターと紐づけて集計します。</p>
+      </header>
 
-      <button id="btnImport">Excelファイルを取り込む</button>
-      <pre id="result"></pre>
+      <nav class="tabs">
+        <button class="tab-button active" data-tab="import">取込</button>
+        <button class="tab-button" data-tab="master">マスター</button>
+        <button class="tab-button" data-tab="mapping">対応付け</button>
+        <button class="tab-button" data-tab="aggregate">集計</button>
+      </nav>
 
-      <section>
-        <h2>未分類項目</h2>
-        <div id="unmappedList"></div>
-      </section>
+      <div id="main-content">
+        <section id="tab-import" class="tab-panel" active>
+          <!-- 取り込みセクションのコンテンツ -->
+          <div id="import-excel">
+            <h2>iBow出力データの取り込み</h2>
+            <button id="btn-import-fee-record">Excelファイルを取り込む</button>
+            <pre id="result-fee-record"></pre>
+          </div>
+          
+          <div id="import-fee-master-csv">
+            <h2>診療報酬マスタCSVの取り込み</h2>
+            <button id="btn-import-fee-master">CSVファイルを取り込む</button>
+            <pre id="result-fee-master"></pre>
+          </div>
+          
+        </section>
+        
+        <section id="tab-master" class="tab-panel" active>
+          <!-- マスタ一覧セクションのコンテンツ -->
+          <div>
+            <h2>カテゴリマスタ登録</h2>
+            <input id="newCategoryName" placeholder="カテゴリ名" />
+            <input id="newCategoryGroupName" placeholder="グループ名" />
+            <input id="newCategoryItemType" placeholder="種別" />
+            <input id="newCategoryDisplayOrder" type="number" placeholder="表示順" />
+            <button id="btnSaveCategory">カテゴリを保存</button>
+          </div>
+        </section>
 
-      <section>
-        <h2>分類登録</h2>
+        <section id="tab-mapping" class="tab-panel" active>
+          <!-- データマッピングセクションのコンテンツ -->
+          <div>
+            <h2>未分類項目</h2>
+            <div id="unmappedList"></div> 
+          </div>
 
-        <input id="ibowItemName" placeholder="iBow項目名" readonly />
+          <div>
+            <h2>分類登録</h2>
+            <input id="ibowItemName" placeholder="iBow項目名" readonly />
+            <select id="categoryName"></select>
+            <input id="groupName" placeholder="グループ名 例：基本療養費" />
+            <input id="itemType" placeholder="種別 例：basic_fee" />
+            <input id="displayOrder" type="number" placeholder="表示順" />
+            <button id="btnSaveMapping">分類を保存</button>
+          </div>
 
-        <select id="categoryName"></select>
+          <div>
+            <h2>登録済み分類</h2>
+            <div id="masterList"></div>
+          </div>
 
-        <input id="groupName" placeholder="グループ名 例：基本療養費" />
+        </section>
 
-        <input id="itemType" placeholder="種別 例：basic_fee" />
+        <section id="tab-aggregate" class="tab-panel" active>
+          <!-- 集計セクションのコンテンツ -->
+        </section>
 
-        <input id="displayOrder" type="number" placeholder="表示順" />
+      </div>
 
-        <button id="btnSaveMapping">分類を保存</button>
-      </section>
-
-      <section>
-        <h2>登録済み分類</h2>
-        <div id="masterList"></div>
-      </section>
-
-      <section>
-        <h2>カテゴリマスタ登録</h2>
-
-        <input id="newCategoryName" placeholder="カテゴリ名" />
-        <input id="newCategoryGroupName" placeholder="グループ名" />
-        <input id="newCategoryItemType" placeholder="種別" />
-        <input id="newCategoryDisplayOrder" type="number" placeholder="表示順" />
-
-        <button id="btnSaveCategory">カテゴリを保存</button>
-      </section>
+      
 
       <script type="module" src="./src/main.js"></script>      
     </main>

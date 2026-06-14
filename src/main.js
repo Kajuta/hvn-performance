@@ -1,28 +1,179 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 
-const btnImport = document.getElementById("btnImport");
-const result = document.getElementById("result");
+
+const feeRecordResult = document.getElementById("result-fee-record");
+const feeMasterResult = document.getElementById("result-fee-master")
 
 const unmappedList = document.getElementById("unmappedList");
 const masterList = document.getElementById("masterList");
 
 const ibowItemName = document.getElementById("ibowItemName");
-const categoryName = document.getElementById("categoryName");
+
 const groupName = document.getElementById("groupName");
 const itemType = document.getElementById("itemType");
 const displayOrder = document.getElementById("displayOrder");
-
-const btnSaveMapping = document.getElementById("btnSaveMapping");
 
 const newCategoryName = document.getElementById("newCategoryName");
 const newCategoryGroupName = document.getElementById("newCategoryGroupName");
 const newCategoryItemType = document.getElementById("newCategoryItemType");
 const newCategoryDisplayOrder = document.getElementById("newCategoryDisplayOrder");
-const btnSaveCategory = document.getElementById("btnSaveCategory");
 
 let feeCategories = [];
 let currentBatchId = null;
+
+const btnSaveMapping = document.getElementById("btnSaveMapping");
+const btnSaveCategory = document.getElementById("btnSaveCategory");
+const btnImportFeeRecord = document.getElementById("btn-import-fee-record");
+const btnImportFeeMaster = document.getElementById("btn-import-fee-master");
+const categoryName = document.getElementById("categoryName");
+
+// Doc読み込み完了後の処理
+document.addEventListener("DOMContentLoaded", async () => {
+
+  loadCategoryOptions();
+  setupTabs();
+
+  // マッピング保存ボタンイベント
+  btnSaveMapping.addEventListener("click", saveFeeItemMapping);
+
+  // インポートボタンイベント
+  btnImportFeeRecord.addEventListener("click", importVisitRecords);
+
+  // カテゴリ保存ボタンイベント
+  btnSaveCategory.addEventListener("click", saveFeeCategory);
+
+  // カテゴリ選択時の補完
+  categoryName.addEventListener("change", fillCategoryMeta);
+
+  // 診療報酬マスタのインポート
+  btnImportFeeMaster.addEventListener("click", importFeeMasterCsv)
+
+});
+
+// --- main function 
+
+
+// タブのセットアップ
+function setupTabs() {
+  const tabButtons = document.querySelectorAll(".tab-button");
+  const tabPanels = document.querySelectorAll(".tab-panel");
+
+  tabButtons.forEach((button) => {
+
+    button.addEventListener("click", () => {
+      const target = button.dataset.tab;
+      tabButtons.forEach((btn) => {
+        btn.classList.remove("active");
+      });
+
+      tabPanels.forEach((panel) => {
+        panel.classList.remove("active");
+      });
+
+      button.classList.add("active");
+      const targetPanel = document.getElementById(`tab-${target}`);
+
+      if (targetPanel) {
+        targetPanel.classList.add("active");
+      }
+    });
+  });
+}
+
+// 診療報酬マスタのインポート
+async function importFeeMasterCsv() {
+  try {
+    const filePath = await open({
+      multiple: false,
+      filters: [
+        {
+          name: "CSV",
+          extensions: ["csv"],
+        },
+      ],
+    });
+
+    if (!filePath) return;
+    const count = await invoke("import_fee_master_csv", {
+      filePath,
+    });
+    feeMasterResult.textContent = `${count}件取り込みました`;
+  } catch (error) {
+    feeMasterResult.textContent = `エラー: ${error}`;
+  }
+}
+
+// 診療報酬項目マッピングの保存
+async function saveFeeItemMapping() {
+  await invoke("save_fee_item_mapping", {
+    input: {
+      ibow_item_name: ibowItemName.value,
+      category_name: categoryName.value,
+      group_name: groupName.value || null,
+      item_type: itemType.value || null,
+      display_order: displayOrder.value
+        ? Number(displayOrder.value)
+        : null
+    }
+  });
+
+  // reload
+  await loadUnmappedItems();
+  await loadMasterList();
+}
+
+// ibow出力データ（訪問看護内容SeisinのXLSX）のインポート
+async function importVisitRecords() {
+  try {
+    const filePath = await open({
+      multiple: false,
+      filters: [
+        {
+          name: "Excel",
+          extensions: ["xlsx", "xlsm", "xls"]
+        }
+      ]
+    });
+
+    if (!filePath) return;  
+
+    const importResult = await invoke("import_visit_records", {
+      path: filePath
+    });
+
+    currentBatchId = importResult.batch_id;
+
+    // reload
+    await loadUnmappedItems();
+    await loadMasterList();
+
+  } catch (error) {
+    console.log(`エラー: ${error}`)
+  }
+
+}
+
+// 診療報酬カテゴリの保存
+async function saveFeeCategory() {
+  await invoke("save_fee_category", {
+    input: {
+      category_name: newCategoryName.value,
+      group_name: newCategoryGroupName.value || null,
+      item_type: newCategoryItemType.value || null,
+      display_order: newCategoryDisplayOrder.value
+        ? Number(newCategoryDisplayOrder.value)
+        : null
+    }
+  });
+
+  newCategoryName.value = "";
+  newCategoryGroupName.value = "";
+  newCategoryItemType.value = "";
+  newCategoryDisplayOrder.value = "";
+
+  await loadCategoryOptions();
+}
 
 
 // カテゴリオプションの読み込み
@@ -123,95 +274,4 @@ async function loadMasterList() {
     masterList.appendChild(button);
   });
 }
-
-// Doc読み込み完了後の処理
-document.addEventListener("DOMContentLoaded", async () => {
-
-  loadCategoryOptions();
-
-    // マッピング保存ボタンイベント
-  btnSaveMapping.addEventListener("click", async () => {
-    await invoke("save_fee_item_mapping", {
-      input: {
-        ibow_item_name: ibowItemName.value,
-        category_name: categoryName.value,
-        group_name: groupName.value || null,
-        item_type: itemType.value || null,
-        display_order: displayOrder.value
-          ? Number(displayOrder.value)
-          : null
-      }
-    });
-
-    await loadUnmappedItems();
-    await loadMasterList();
-  });
-
-  // インポートボタンイベント
-  btnImport.addEventListener("click", async () => {
-    try {
-      const filePath = await open({
-        multiple: false,
-        filters: [
-          {
-            name: "Excel",
-            extensions: ["xlsx", "xlsm", "xls"]
-          }
-        ]
-      });
-
-      if (!filePath) return;
-
-      const data = await invoke("inspect_excel", {
-        path: filePath
-      });
-
-      const records = await invoke("preview_visit_records", {
-        path: filePath
-      });
-
-      const validation = await invoke("validate_fee_item_totals", {
-        path: filePath
-      });
-
-      const importResult = await invoke("import_visit_records", {
-        path: filePath
-      });
-
-      currentBatchId = importResult.batch_id;
-
-      await loadUnmappedItems();
-      await loadMasterList();
-
-
-    } catch (error) {
-      result.textContent = `エラー: ${error}`;
-    }
-  });
-
-  // カテゴリ保存ボタンイベント
-  btnSaveCategory.addEventListener("click", async () => {
-    await invoke("save_fee_category", {
-      input: {
-        category_name: newCategoryName.value,
-        group_name: newCategoryGroupName.value || null,
-        item_type: newCategoryItemType.value || null,
-        display_order: newCategoryDisplayOrder.value
-          ? Number(newCategoryDisplayOrder.value)
-          : null
-      }
-    });
-
-    newCategoryName.value = "";
-    newCategoryGroupName.value = "";
-    newCategoryItemType.value = "";
-    newCategoryDisplayOrder.value = "";
-
-    await loadCategoryOptions();
-  });
-
-  // カテゴリ選択時の補完
-  categoryName.addEventListener("change", fillCategoryMeta);
-
-});
 
