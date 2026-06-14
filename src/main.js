@@ -25,21 +25,7 @@ let feeCategories = [];
 let currentBatchId = null;
 
 
-async function loadCategoryOptions() {
-  feeCategories = await invoke("list_fee_categories");
-
-  categoryName.innerHTML = "";
-
-  feeCategories.forEach((category) => {
-    const option = document.createElement("option");
-    option.value = category.category_name;
-    option.textContent =
-      `${category.category_name} / ${category.group_name ?? ""}`;
-
-    categoryName.appendChild(option);
-  });
-}
-
+// カテゴリオプションの読み込み
 async function loadCategoryOptions() {
   const categories = await invoke("list_fee_categories");
 
@@ -55,7 +41,7 @@ async function loadCategoryOptions() {
   });
 }
 
-
+// 未マッピング項目選択
 function selectUnmappedItem(name) {
   ibowItemName.value = name;
   categoryName.value = "";
@@ -84,6 +70,7 @@ async function loadUnmappedItems() {
   });
 }
 
+// マスタリストの読み込み
 async function loadMasterList() {
   const items = await invoke("list_fee_item_master");
 
@@ -99,6 +86,7 @@ async function loadMasterList() {
   });
 }
 
+// マッピング保存ボタンイベント
 btnSaveMapping.addEventListener("click", async () => {
   await invoke("save_fee_item_mapping", {
     input: {
@@ -157,6 +145,7 @@ btnImport.addEventListener("click", async () => {
   }
 });
 
+// カテゴリ保存ボタンイベント
 btnSaveCategory.addEventListener("click", async () => {
   await invoke("save_fee_category", {
     input: {
@@ -176,3 +165,16 @@ btnSaveCategory.addEventListener("click", async () => {
 
   await loadCategoryOptions();
 });
+
+// カテゴリ選択時の補完
+categoryName.addEventListener("change", () => {
+  const selected = feeCategories.find(
+    (category) => category.category_name === categoryName.value
+  );
+
+  if (!selected) return;
+
+  groupName.value = selected.group_name ?? "";
+  itemType.value = selected.item_type ?? "";
+});
+
