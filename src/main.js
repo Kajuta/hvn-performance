@@ -15,13 +15,30 @@ const displayOrder = document.getElementById("displayOrder");
 
 const btnSaveMapping = document.getElementById("btnSaveMapping");
 
-let currentBatchId = null;
-
 const newCategoryName = document.getElementById("newCategoryName");
 const newCategoryGroupName = document.getElementById("newCategoryGroupName");
 const newCategoryItemType = document.getElementById("newCategoryItemType");
 const newCategoryDisplayOrder = document.getElementById("newCategoryDisplayOrder");
 const btnSaveCategory = document.getElementById("btnSaveCategory");
+
+let feeCategories = [];
+let currentBatchId = null;
+
+
+async function loadCategoryOptions() {
+  feeCategories = await invoke("list_fee_categories");
+
+  categoryName.innerHTML = "";
+
+  feeCategories.forEach((category) => {
+    const option = document.createElement("option");
+    option.value = category.category_name;
+    option.textContent =
+      `${category.category_name} / ${category.group_name ?? ""}`;
+
+    categoryName.appendChild(option);
+  });
+}
 
 async function loadCategoryOptions() {
   const categories = await invoke("list_fee_categories");
